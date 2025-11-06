@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" presently="width=device-width, initial-scale=1.0" />
+    <title>Simple Reactivity Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      button {
+        padding: 8px 15px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      input {
+        padding: 8px;
+        margin: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Simple Reactivity System</h1>
+
+    <div class="container">
+      <h2>Basic Ref Demo</h2>
+      <p>Count: <span id="countValue">0</span></p>
+      <button id="increment">+</button>
+      <button id="decrement">-</button>
+      <p>Doubled: <span id="doubledValue">0</span></p>
+    </div>
+
+    <div class="container">
+      <h2>Reactive Object Demo</h2>
+      <p>Name: <span id="nameValue">John</span></p>
+      <input type="text" id="nameInput" placeholder="Enter name" />
+      <p>Age: <span id="ageValue">25</span></p>
+      <button id="ageIncrement">Increase Age</button>
+    </div>
+
+    <script>
+      // 简单的依赖收集类
+      class Dep {
+        constructor() {
+          this.subscribers = new Set()
+        }
+
+        // 收集依赖
+        track() {
+          if (activeEffect) {
+            this.subscribers.add(activeEffect)
+          }
+        }
+
+        // 触发更新
+        trigger() {
+          this.subscribers.forEach(effect => effect())
+        }
+      }
+
+      // 简单的 ref 实现
+      function ref(value) {
+        const dep = new Dep()
+
+        return {
+          _value: value,
+          get value() {
+            dep.track() // 收集依赖
+            return this._value
+          },
+          set value(newValue) {
+            this._value = newValue
+            dep.trigger() // 触发更新
+          },
+        }
+      }
+
+      // 简单的 reactive 实现
+      function reactive(target) {
+        if (typeof target !== 'object' || target === null) {
+          return target
+        }
+
+        const deps = new Map()
+
+        // 创建 Proxy
+        return new Proxy(target, {
+          get(target, key, receiver) {
+            // 获取或创建对应属性的 dep
+            if (!deps.has(key)) {
+              deps.set(key, new Dep())
+            }
+
+            // 收集依赖
+            deps.get(key).track()
+
+            return Reflect.get(target, key, receiver)
+          },
+
+          set(target, key, value, receiver) {
+            const oldValue = target[key]
+            const result = Reflect.set(target, key, value, receiver)
+
+            // 触发更新
+            if (deps.has(key)) {
+              deps.get(key).trigger()
+            }
+
+            return result
+          },
+        })
+      }
+
+      // 全局变量，标记当前正在执行的副作用函数
+      let activeEffect = null
+
+      // 副作用函数包装器
+      function effect(fn) {
+        const effectFn = () => {
+          // 保存之前的 activeEffect
+          const previousEffect = activeEffect
+          activeEffect = effectFn
+          try {
+            fn()
+          } finally {
+            // 恢复之前的 activeEffect
+            activeEffect = previousEffect
+          }
+        }
+        effectFn()
+        return effectFn
+      }
+
+      // ========== 使用示例 ==========
+
+      // 创建响应式数据
+      const count = ref(0)
+      const state = reactive({
+        name: 'John',
+        age: 25,
+      })
+
+      // 获取 DOM 元素
+      const countValue = document.getElementById('countValue')
+      const doubledValue = document.getElementById('doubledValue')
+      const incrementBtn = document.getElementById('increment')
+      const decrementBtn = document.getElementById('decrement')
+
+      const nameValue = document.getElementById('nameValue')
+      const nameInput = document.getElementById('nameInput')
+      const ageValue = document.getElementById('ageValue')
+      const ageIncrementBtn = document.getElementById('ageIncrement')
+
+      // 副作用函数1：更新计数显示
+      effect(() => {
+        countValue.textContent = count.value
+      })
+
+      // 副作用函数2：更新双倍值显示
+      effect(() => {
+        doubledValue.textContent = count.value * 2
+      })
+
+      // 副作用函数3：更新姓名显示
+      effect(() => {
+        nameValue.textContent = state.name
+      })
+
+      // 副作用函数4：更新年龄显示
+      effect(() => {
+        ageValue.textContent = state.age
+      })
+
+      // 绑定事件
+      incrementBtn.addEventListener('click', () => {
+        count.value++
+      })
+
+      decrementBtn.addEventListener('click', () => {
+        count.value--
+      })
+
+      nameInput.addEventListener('input', e => {
+        state.name = e.target.value
+      })
+
+      ageIncrementBtn.addEventListener('click', () => {
+        state.age++
+      })
+    </script>
+  </body>
+</html>
