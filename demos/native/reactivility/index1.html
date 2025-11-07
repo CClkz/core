@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" presently="width=device-width, initial-scale=1.0" />
+    <title>Simple Reactivity Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      button {
+        padding: 8px 15px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      input {
+        padding: 8px;
+        margin: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Simple Reactivity System</h1>
+
+    <div class="container">
+      <h2>Basic Ref Demo</h2>
+      <p>Count: <span id="countValue">0</span></p>
+      <button id="increment">+</button>
+      <button id="decrement">-</button>
+      <p>Doubled: <span id="doubledValue">0</span></p>
+    </div>
+
+    <div class="container">
+      <h2>Reactive Object Demo</h2>
+      <p>Name: <span id="nameValue">John</span></p>
+      <input type="text" id="nameInput" placeholder="Enter name" />
+      <p>Age: <span id="ageValue">25</span></p>
+      <button id="ageIncrement">Increase Age</button>
+    </div>
+
+    <script>
+      let activeEffect = null
+
+      // 依赖管理
+      class Dep {
+        constructor() {
+          this.subscribers = new Set()
+        }
+
+        track() {
+          if (activeEffect) {
+            this.subscribers.add(activeEffect)
+          }
+        }
+
+        trigger() {
+          this.subscribers.forEach(effectFn => effectFn())
+        }
+      }
+
+      // ref函数
+      const ref = function (value) {
+        const dep = new Dep()
+        return {
+          _value: value,
+          get value() {
+            dep.track()
+            return this._value
+          },
+          set value(val) {
+            this._value = val
+            dep.trigger()
+          },
+        }
+      }
+      const countValue = ref(0)
+      const doubledValue = ref(0)
+
+      const countValueDom = document.getElementById('countValue')
+      const incrementDom = document.getElementById('increment')
+      const decrementDom = document.getElementById('decrement')
+      const doubledValueDom = document.getElementById('doubledValue')
+
+      const incrementDomClick = () => {
+        countValue.value += 1
+        doubledValue.value = countValue.value * 2
+      }
+      const decrementDomClick = () => {
+        countValue.value -= 1
+        doubledValue.value = countValue.value * 2
+      }
+      incrementDom.addEventListener('click', incrementDomClick)
+      decrementDom.addEventListener('click', decrementDomClick)
+
+      const effect = fn => {
+        activeEffect = fn
+        fn()
+        activeEffect = null
+      }
+
+      effect(() => {
+        countValueDom.innerHTML = countValue.value
+        doubledValueDom.innerHTML = doubledValue.value
+      })
+    </script>
+  </body>
+</html>
