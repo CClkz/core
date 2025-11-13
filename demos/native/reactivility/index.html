@@ -72,6 +72,7 @@
         const dep = new Dep()
 
         return {
+          _isRef: true,
           _value: value,
           get value() {
             dep.track() // 收集依赖

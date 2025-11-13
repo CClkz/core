@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" presently="width=device-width, initial-scale=1.0" />
-    <title>Simple Reactivity Demo</title>
+    <title>Reactivity Demo</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -71,6 +71,7 @@
       const ref = function (value) {
         const dep = new Dep()
         return {
+          _v_isRef: true,
           _value: value,
           get value() {
             dep.track()
@@ -82,6 +83,34 @@
           },
         }
       }
+
+      const reactive = function (target) {
+        const dep = new Dep()
+        return new Proxy(target, {
+          get(target, key, receiver) {
+            if (key === '_v_isReactive') {
+              return true
+            }
+            const result = Reflect.get(target, key, receiver)
+            dep.track()
+            return result
+          },
+          set(target, key, value, receiver) {
+            const result = Reflect.set(target, key, value, receiver)
+            dep.trigger()
+            return result
+          },
+        })
+      }
+
+      // 副作用函数封装器
+      const effect = fn => {
+        activeEffect = fn
+        fn()
+        activeEffect = null
+      }
+
+      // 案例一：ref
       const countValue = ref(0)
       const doubledValue = ref(0)
 
@@ -101,15 +130,34 @@
       incrementDom.addEventListener('click', incrementDomClick)
       decrementDom.addEventListener('click', decrementDomClick)
 
-      const effect = fn => {
-        activeEffect = fn
-        fn()
-        activeEffect = null
-      }
-
       effect(() => {
         countValueDom.innerHTML = countValue.value
         doubledValueDom.innerHTML = doubledValue.value
+      })
+
+      // 案例二：reactive
+      const state = reactive({
+        name: 'Jim',
+        age: 12,
+      })
+
+      const nameValueDom = document.getElementById('nameValue')
+      const nameInputDom = document.getElementById('nameInput')
+      const ageValueDom = document.getElementById('ageValue')
+      const ageIncrementDom = document.getElementById('ageIncrement')
+
+      const inputChange = () => {
+        state.name = nameInputDom.value
+      }
+      const ageIncrementClick = () => {
+        state.age = state.age + 1
+      }
+      nameInputDom.addEventListener('input', inputChange)
+      ageIncrementDom.addEventListener('click', ageIncrementClick)
+
+      effect(() => {
+        nameValueDom.innerHTML = state.name
+        ageValueDom.innerHTML = state.age
       })
     </script>
   </body>
