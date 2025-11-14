@@ -10,8 +10,10 @@
   <HelloWorld msg="Vite + Vue" />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import HelloWorld from '@/components/HelloWorld.vue'
+import { ref } from '@/packages/reactivity'
+// import type { Ref } from '@/packages/reactivity/ref'
 </script>
 
 <style scoped>
