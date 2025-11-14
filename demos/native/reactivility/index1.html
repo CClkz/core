@@ -105,9 +105,17 @@
 
       // 副作用函数封装器
       const effect = fn => {
-        activeEffect = fn
-        fn()
-        activeEffect = null
+        const effectFn = () => {
+          const previousEffect = activeEffect
+          activeEffect = fn
+          try {
+            fn()
+          } finally {
+            activeEffect = previousEffect
+          }
+        }
+        effectFn()
+        return effectFn
       }
 
       // 案例一：ref
