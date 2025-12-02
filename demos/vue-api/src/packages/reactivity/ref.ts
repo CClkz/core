@@ -7,6 +7,5 @@ export interface Ref<T = any, S = T> {
   [RefSymbol]: boolean
 }
 
-export const ref = {
-  isRef: true,
-}
+export function ref<T = any, S = T>(value?: T): Ref<T, S>
+export function ref<T = any, S = T>(obj: T): Ref<T, S>

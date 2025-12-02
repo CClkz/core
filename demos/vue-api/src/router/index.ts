@@ -7,6 +7,11 @@ const routes = [
     name: 'Home',
     component: Home,
   },
+  {
+    path: '/api',
+    name: 'HomeApi',
+    component: () => import('@/views/HomeApi.vue'),
+  },
 ]
 
 const router = createRouter({
